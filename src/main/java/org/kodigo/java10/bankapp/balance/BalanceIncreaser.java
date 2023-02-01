@@ -1,10 +1,8 @@
-package org.kodigo.java10.bankapp;
+package org.kodigo.java10.bankapp.balance;
 
 
 /**
  * This interface is responsible for increasing money in an account.
- * Its implementation has validations to determine that the account
- * exists and other things that may happen.
  */
 interface BalanceIncreaser {
 
@@ -13,5 +11,6 @@ interface BalanceIncreaser {
      * @param amount is the money amount to increase
      * @param accountNumber is the number account to increase
      */
-    void increment(int amount, int accountNumber);
+    void increment(double amount, int accountNumber);
+
 }

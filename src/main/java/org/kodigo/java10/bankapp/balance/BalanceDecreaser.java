@@ -1,9 +1,7 @@
-package org.kodigo.java10.bankapp;
+package org.kodigo.java10.bankapp.balance;
 
 /**
  * This interface is responsible for decreasing money in an account.
- * Its implementation has validations to determine that the account
- * exists and other things that may happen.
  */
 interface BalanceDecreaser {
 
@@ -12,5 +10,6 @@ interface BalanceDecreaser {
      * @param amount is the money amount to increase
      * @param accountNumber is the number account to increase
      */
-    void decrement(int amount, int accountNumber);
+    void decrement(double amount, int accountNumber);
+
 }

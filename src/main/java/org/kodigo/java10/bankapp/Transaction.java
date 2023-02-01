@@ -1,5 +1,10 @@
 package org.kodigo.java10.bankapp;
 
+import org.kodigo.java10.bankapp.balance.BalanceIManager;
+import org.kodigo.java10.bankapp.crud.GetterAccountUseCase;
+import org.kodigo.java10.bankapp.crud.GetterAccountUseCase.FindAccountResult;
+import org.kodigo.java10.bankapp.crud.GetterAccountUseCase.FindAccountResult.AccountFound;
+
 public interface Transaction {
 
     TransactionTicked makeTransaction(TransactionPetition petition);
@@ -8,35 +13,46 @@ public interface Transaction {
 
 class TransactionImpl implements Transaction {
 
-    DateResolver dateResolver;
-    BalanceDecreaser balanceDecreaser;
-    BalanceIncreaser moneyIncrement;
+    private final DateResolver dateResolver;
+    private final BalanceIManager manager;
+    private final GetterAccountUseCase finder;
+    private final TransactionTickedBuilder tickedBuilder;
+
 
     public TransactionImpl(
-            DateResolver dateResolver,
-            BalanceDecreaser balanceDecreaser,
-            BalanceIncreaser moneyIncrement
+            DateResolver dateResolver, BalanceIManager manager,
+            GetterAccountUseCase finder, TransactionTickedBuilder tickedBuilder
     ) {
         this.dateResolver = dateResolver;
-        this.balanceDecreaser = balanceDecreaser;
-        this.moneyIncrement = moneyIncrement;
+        this.manager = manager;
+        this.finder = finder;
+        this.tickedBuilder = tickedBuilder;
     }
 
     @Override
     public TransactionTicked makeTransaction(TransactionPetition petition) {
-        return null;
+
+        TransactionTicked ticked;
+
+        if (!validateExistingBothAccount(petition.origen, petition.destination)) {
+            ticked = tickedBuilder.buildWithAccountNotFound();
+            return ticked;
+        }
+
+        if (!amountIsValid(petition.origen)) {
+            ticked = tickedBuilder.buildWithOverMoney();
+            return ticked;
+        }
+
+        makeTransition(petition.amount, petition.origen, petition.destination);
+        Date date = getDateResolver();
+        ticked = tickedBuilder.buildSuccess(
+                date, petition.amount, petition.conceptTransfer,
+                petition.origen, petition.destination
+        );
+        return ticked;
     }
 
-    /**
-     * validates if the amount is major than account money
-     *
-     * @param amount to transfer.
-     * @param money  of the origen account.
-     * @return TODO
-     */
-    private Boolean validateMoney(int amount, int money) {
-        return amount <= money;
-    }
 
     /**
      * get the current date
@@ -47,19 +63,33 @@ class TransactionImpl implements Transaction {
         return dateResolver.resolve();
     }
 
+
     /**
      * this function decrement the money of the origen account
      * and increment the money of the destination account
-     * @param amount to transfer
-     * @param origen account to decrement money
+     *
+     * @param amount      to transfer
+     * @param origen      account to decrement money
      * @param destination account to increment money
-     * */
+     */
     private void makeTransition(
-            int amount, OrigenAccount origen,
-            DestinationAccount destination
+            double amount, OrigenAccount origen, DestinationAccount destination
     ) {
-        balanceDecreaser.decrement(amount, origen.number);
-        moneyIncrement.increment(amount, destination.number);
+        manager.decrement(amount, origen.number);
+        manager.increment(amount, destination.number);
+    }
+
+    private boolean validateExistingBothAccount(
+            OrigenAccount origen, DestinationAccount destination
+    ) {
+        FindAccountResult origenResult = finder.tryGet(origen.number);
+        FindAccountResult destinationResult = finder.tryGet(destination.number);
+        return origenResult instanceof AccountFound &&
+                destinationResult instanceof AccountFound;
+    }
+
+    private boolean amountIsValid(OrigenAccount origen) {
+        return manager.validate(origen.money, origen.number);
     }
 
 }
