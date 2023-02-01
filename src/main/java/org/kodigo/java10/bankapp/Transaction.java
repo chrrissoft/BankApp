@@ -39,7 +39,7 @@ class TransactionImpl implements Transaction {
             return ticked;
         }
 
-        if (!amountIsValid(petition.origen)) {
+        if (amountIsInvalid(petition.amount, petition.origen)) {
             ticked = tickedBuilder.buildWithOverMoney();
             return ticked;
         }
@@ -88,8 +88,8 @@ class TransactionImpl implements Transaction {
                 destinationResult instanceof AccountFound;
     }
 
-    private boolean amountIsValid(OrigenAccount origen) {
-        return manager.validate(origen.money, origen.number);
+    private boolean amountIsInvalid(double amount, OrigenAccount origen) {
+        return manager.validate(amount, origen.number);
     }
 
 }

@@ -22,12 +22,12 @@ public interface AccountRepository {
 class AccountRepositoryImpl implements AccountRepository {
 
     private final ArrayList<Account> accounts = new ArrayList<>(List.of(
-            new Account(1, 1200.45),
+            new Account(1, 0),
             new Account(2, 2000.0),
-            new Account(3, 10.3),
-            new Account(4, 100.29),
-            new Account(5, 1090.20),
-            new Account(6, 10.0)
+            new Account(3, 1000.0),
+            new Account(4, 100.50),
+            new Account(5, 500.20),
+            new Account(6, 1000.0)
     ));
 
     public AccountRepositoryImpl() {

@@ -35,7 +35,7 @@ public class BalanceIManagerImpl implements BalanceIManager {
     @Override
     public boolean validate(double amount, int accountNumber) {
         double money = getter.get(accountNumber).money;
-        return amount <= money;
+        return amount >= money;
     }
 
 }

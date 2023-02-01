@@ -2,6 +2,8 @@ package org.kodigo.java10.bankapp;
 
 
 import org.junit.Test;
+import org.kodigo.java10.bankapp.TransactionTicked.FailTicked;
+import org.kodigo.java10.bankapp.TransactionTicked.FailTicked.Reason;
 import org.kodigo.java10.bankapp.balance.BalanceIManager;
 import org.kodigo.java10.bankapp.balance.BalanceIManagerImpl;
 import org.kodigo.java10.bankapp.crud.CrudAccountUseCaseImpl;
@@ -20,40 +22,127 @@ public class TransactionImplTest {
 
     @Test
     public void theTransactionIsDoneWhenAllGoingGood() {
-        double amount = 10.0;
-        String conceptTransfer = "I don't know";
-        OrigenAccount origen = new OrigenAccount(100.0, 2, SAVED);
-        DestinationAccount destination = new DestinationAccount(1, SAVED);
-        TransactionPetition petition = new TransactionPetition(
-                amount, conceptTransfer, origen, destination
-        );
+        TransactionPetition petition = getGoodPetition();
+        double expectedDestination = repo.get(petition.destination.number).money + petition.amount;
+        double expectedOrigen = repo.get(petition.origen.number).money - petition.amount;
 
-        double expectedDestination = repo.get(destination.number).money + petition.amount;
-        double expectedOrigen = repo.get(origen.number).money - petition.amount;
         transaction.makeTransaction(petition);
-        double givenDestination = repo.get(destination.number).money;
-        double givenOrigen = repo.get(origen.number).money;
+        double givenDestination = repo.get(petition.destination.number).money;
+        double givenOrigen = repo.get(petition.origen.number).money;
+
         assert givenDestination == expectedDestination;
         assert givenOrigen == expectedOrigen;
     }
 
     @Test
     public void theTransactionIsFailedWhenTheOrigenNotHaveMoney() {
-        double amount = 10.0;
-        String conceptTransfer = "I don't know";
-        OrigenAccount origen = new OrigenAccount(100.0, 6, SAVED);
-        DestinationAccount destination = new DestinationAccount(1, SAVED);
-        TransactionPetition petition = new TransactionPetition(
-                amount, conceptTransfer, origen, destination
-        );
+        TransactionPetition petition = getPetitionWithNotMoney();
+        double expectedDestination = repo.get(petition.destination.number).money;
+        double expectedOrigen = repo.get(petition.origen.number).money;
 
-        double expectedDestination = repo.get(destination.number).money;
-        double expectedOrigen = repo.get(origen.number).money;
         transaction.makeTransaction(petition);
-        double givenDestination = repo.get(destination.number).money;
-        double givenOrigen = repo.get(origen.number).money;
+        double givenDestination = repo.get(petition.destination.number).money;
+        double givenOrigen = repo.get(petition.origen.number).money;
+
         assert givenDestination == expectedDestination;
         assert givenOrigen == expectedOrigen;
+    }
+
+    @Test
+    public void theTransactionIsFailedWhenTheOrigenNotFound() {
+        TransactionPetition petition = getPetitionWithOrigenAccountNotFound();
+        double expectedDestination = repo.get(petition.destination.number).money;
+
+        transaction.makeTransaction(petition);
+        double givenDestination = repo.get(petition.destination.number).money;
+
+        assert givenDestination == expectedDestination;
+    }
+
+    @Test
+    public void theTransactionIsFailedWhenTheDestinationNotFound() {
+        TransactionPetition petition = getPetitionWithDestinationAccountNotFound();
+        double expectedOrigen = repo.get(petition.origen.number).money;
+
+        transaction.makeTransaction(petition);
+        double givenOrigen = repo.get(petition.origen.number).money;
+
+        assert givenOrigen == expectedOrigen;
+    }
+
+    @Test
+    public void whenNotMoneyReturnFailedTickedWithNotMoneyReason() {
+        TransactionPetition petition = getPetitionWithNotMoney();
+        TransactionTicked ticked = transaction.makeTransaction(petition);
+        assert ticked instanceof FailTicked;
+        assert ((FailTicked) ticked).reason == Reason.AMOUNT_OVER_MONEY;
+    }
+
+    @Test
+    public void whenNotOrigenAccountFoundReturnFailedTickedWithNotAccountFoundReason() {
+        TransactionPetition petition = getPetitionWithOrigenAccountNotFound();
+        TransactionTicked ticked = transaction.makeTransaction(petition);
+        assert ticked instanceof FailTicked;
+        assert ((FailTicked) ticked).reason == Reason.ACCOUNT_NOT_FOUND;
+    }
+
+
+    private TransactionPetition getPetitionWithNotMoney() {
+        double amount = 10.0;
+        String conceptTransfer = "I don't know";
+        Account origenAccount = repo.get(1);
+        Account destinationAccount = repo.get(2);
+
+        OrigenAccount origenTransaction =
+                new OrigenAccount(origenAccount.money, origenAccount.number, SAVED);
+        DestinationAccount destination =
+                new DestinationAccount(destinationAccount.number, SAVED);
+
+        return new TransactionPetition(
+                amount, conceptTransfer, origenTransaction, destination);
+    }
+
+    private TransactionPetition getPetitionWithOrigenAccountNotFound() {
+        double amount = 10.0;
+        String conceptTransfer = "I don't know";
+        Account destinationAccount = repo.get(2);
+
+        OrigenAccount origenTransaction =
+                new OrigenAccount(10000, 10000, SAVED);
+        DestinationAccount destination =
+                new DestinationAccount(destinationAccount.number, SAVED);
+
+        return new TransactionPetition(
+                amount, conceptTransfer, origenTransaction, destination);
+    }
+
+    private TransactionPetition getPetitionWithDestinationAccountNotFound() {
+        double amount = 10.0;
+        String conceptTransfer = "I don't know";
+        Account origenAccount = repo.get(1);
+
+        OrigenAccount origenTransaction =
+                new OrigenAccount(origenAccount.money, origenAccount.number, SAVED);
+        DestinationAccount destination =
+                new DestinationAccount(1000, SAVED);
+
+        return new TransactionPetition(
+                amount, conceptTransfer, origenTransaction, destination);
+    }
+
+    private TransactionPetition getGoodPetition() {
+        double amount = 10.0;
+        String conceptTransfer = "I don't know";
+        Account origenAccount = repo.get(2);
+        Account destinationAccount = repo.get(1);
+
+        OrigenAccount origenTransaction =
+                new OrigenAccount(origenAccount.money, origenAccount.number, SAVED);
+        DestinationAccount destination =
+                new DestinationAccount(destinationAccount.number, SAVED);
+
+        return new TransactionPetition(
+                amount, conceptTransfer, origenTransaction, destination);
     }
 
 }
